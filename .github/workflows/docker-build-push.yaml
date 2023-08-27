@@ -1,0 +1,49 @@
+name: Docker build
+on:
+  # Triggers the workflow on push or pull request events but only for the main branch
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    name: Build docker image
+    env:
+      UNIQUE_TAG: V${{ github.run_number }}.${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@master
+      - name: Build Base Image
+        id: build_base_image
+        uses: aevea/action-kaniko@master
+        with:
+          build_file: Dockerfile
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+          image: ${{ secrets.DOCKERHUB_USERNAME }}/unhtech
+          tag: base_image_${{ env.UNIQUE_TAG }}
+          cache: true
+          cache_registry: aevea/cache
+
+      - name: replace tag and push to github only if push to main branch
+        if: steps.build_base_image.outcome == 'success'
+        run: |
+          cd ..
+          rm -rf unhtech/ && mkdir unhtech
+          git clone https://${{ secrets.GITOPS_GH_USER }}:${{ secrets.GITOPS_GH_TOKEN }}@github.com/o2-edyou/o2geeks-gitops.git
+          cd o2geeks-gitops && cd kustomizations
+          sed -i "s;${{ secrets.DOCKERHUB_USERNAME }}/unhtech:apns_notification_.*$;${{ secrets.DOCKERHUB_USERNAME }}/unhtech:apns_notification_${{ env.UNIQUE_TAG }};g" deploy.yaml
+
+          git config --global user.email "github-admin+hassnat@hassnat.com"
+          git config --global user.name "hassnat"
+          git add .
+          git commit -m "update by ${{ github.actor }} commit_message: ${{ github.event.head_commit.message }}"
+          git push https://${{ secrets.GITOPS_GH_USER }}:${{ secrets.GITOPS_GH_TOKEN }}@github.com/o2-edyou/o2geeks-gitops.git main
+
+      - name: Build and Push done
+        if: steps.build_base_image.outcome == 'success'
+        run: echo "Build and Push done"
+      - uses: google-github-actions/release-please-action@v3
+        with:
+          release-type: simple # https://github.com/google-github-actions/release-please-action#release-types-supported
+          default-branch: main
