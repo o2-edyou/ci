@@ -1,0 +1,75 @@
+name: "Update GitOps Repo"
+description: "Update the GitOps repository"
+inputs:
+  image_name:
+    description: "The Docker image name to be used"
+    required: true
+    type: string
+  repo_name:
+    description: "The GitOps repository name"
+    required: true
+    type: string
+  git_commit_user:
+    description: "The user that will be used for the git commit"
+    type: string
+    default: "gitops bot"
+  gitops_repo_owner:
+    description: "The owner of the GitOps repo"
+    required: true
+    type: string
+  file_path_dev:
+    description: 'The file path for development environment where sed will replace'
+    required: true
+    type: string
+  file_path_prod:
+    description: 'The file path for production environment where sed will replace'
+    required: true
+    type: string
+secrets:
+  github_app_private_key:
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create GitHub App Token
+      uses: actions/create-github-app-token@v1
+      id: app-token
+      with:
+        app-id: ${{ inputs.github_app_id }}
+        private-key: ${{ secrets.github_app_private_key }}
+        owner: ${{ inputs.gitops_repo_owner }}
+        repositories: ${{ inputs.repo_name }}
+
+    - name: Checkout GitOps Repo
+      uses: actions/checkout@v4
+      with:
+        token: ${{ steps.app-token.outputs.token }}
+        ref: ${{ github.head_ref }}
+        persist-credentials: false
+        repository: ${{ inputs.repo_name }}
+        path: gitops-repo
+
+    - name: Update GitOps Repo for Dev
+      if: github.ref == 'refs/heads/main'
+      env:
+        GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+      run: |
+        cd ${{ inputs.file_path_dev }}
+        sed -i "s;${{ inputs.image_name }}:social_api_image_.*$;${{ inputs.image_name }}:social_api_image_${{ env.UNIQUE_TAG }};g" values-dev.yaml
+        git config user.email "${{ secrets.git_commit_user }}"
+        git config user.name "gitops"
+        git commit -am "Image Tag: ${{ env.UNIQUE_TAG }} ${{ github.event.head_commit.message }}"
+        git push https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ inputs.repo_name }}.git
+
+    - name: Update GitOps Repo for Prod
+      if: startsWith(github.ref, 'refs/tags/v')
+      env:
+        GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+      run: |
+        cd ${{ inputs.file_path_prod }}
+        sed -i "s;${{ inputs.image_name }}:social_api_image_.*$;${{ inputs.image_name }}:social_api_image_${{ env.UNIQUE_TAG }};g" values-prod.yaml
+        git config user.email "${{ secrets.git_commit_user }}"
+        git config user.name "gitops"
+        git commit -am "Image Tag: ${{ env.UNIQUE_TAG }} ${{ github.event.head_commit.message }}"
+        git push https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ inputs.repo_name }}.git
