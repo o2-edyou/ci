@@ -9,14 +9,6 @@ inputs:
     description: "The Docker image tag to be used"
     required: true
     type: string
-  repo_name:
-    description: "The GitOps repository name"
-    required: true
-    type: string
-  git_commit_user:
-    description: "The user that will be used for the git commit"
-    type: string
-    default: "gitops bot"
   docker_registry_user:
     description: "The user that will be used for the docker registry"
     required: true
