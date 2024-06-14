@@ -4,32 +4,31 @@ inputs:
   image_name:
     description: "The Docker image name to be used"
     required: true
-    type: string
+    
   image_tag:
     description: "The Docker image tag to be used"
     required: true
-    type: string
+    
   gitops_repo_name:
     description: "The GitOps repository name"
     required: true
-    type: string
+    
   git_commit_user:
     description: "The user that will be used for the git commit"
-    type: string
+    
     default: "gitops bot"
   gitops_repo_owner:
     description: "The owner of the GitOps repo"
     required: true
-    type: string
+    
   file_path_dev:
     description: 'The file path for development environment where sed will replace'
     required: true
-    type: string
+    
   file_path_prod:
     description: 'The file path for production environment where sed will replace'
     required: true
-    type: string
-secrets:
+    
   github_app_private_key:
     required: true
 
@@ -41,7 +40,7 @@ runs:
       id: app-token
       with:
         app-id: ${{ inputs.github_app_id }}
-        private-key: ${{ secrets.github_app_private_key }}
+        private-key: ${{ inputs.github_app_private_key }}
         owner: ${{ inputs.gitops_repo_owner }}
         repositories: ${{ inputs.repo_name }}
 
