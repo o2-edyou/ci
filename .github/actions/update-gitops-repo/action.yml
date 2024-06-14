@@ -62,7 +62,7 @@ runs:
       shell: bash
       run: |
         cd gitops-repo
-        sed -i "s;${{ inputs.image_name }}_.*$;${{ inputs.image_name }}:${{ inputs.image_name }}_${{ inputs.image_tag }};g" ${{ inputs.file_path_dev }}
+        sed -i "s;:${{ inputs.image_name }}_.*$;:${{ inputs.image_name }}_${{ inputs.image_tag }};g" ${{ inputs.file_path_dev }}
         git config user.email "${{ inputs.git_commit_user }}"
         git config user.name "${{ inputs.git_commit_user }}"
         git commit -am "Image Tag: ${{ inputs.image_tag }} ${{ github.event.head_commit.message }}"
