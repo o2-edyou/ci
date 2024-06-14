@@ -5,7 +5,11 @@ inputs:
     description: "The Docker image name to be used"
     required: true
     type: string
-  repo_name:
+  image_tag:
+    description: "The Docker image tag to be used"
+    required: true
+    type: string
+  gitops_repo_name:
     description: "The GitOps repository name"
     required: true
     type: string
@@ -47,7 +51,7 @@ runs:
         token: ${{ steps.app-token.outputs.token }}
         ref: ${{ github.head_ref }}
         persist-credentials: false
-        repository: ${{ inputs.repo_name }}
+        repository: ${{ inputs.gitops_repo_owner }}/${{ inputs.gitops_repo_name }}
         path: gitops-repo
 
     - name: Update GitOps Repo for Dev
@@ -55,21 +59,21 @@ runs:
       env:
         GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
       run: |
-        cd ${{ inputs.file_path_dev }}
-        sed -i "s;${{ inputs.image_name }}:social_api_image_.*$;${{ inputs.image_name }}:social_api_image_${{ env.UNIQUE_TAG }};g" values-dev.yaml
-        git config user.email "${{ secrets.git_commit_user }}"
-        git config user.name "gitops"
-        git commit -am "Image Tag: ${{ env.UNIQUE_TAG }} ${{ github.event.head_commit.message }}"
-        git push https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ inputs.repo_name }}.git
+        cd gitops-repo
+        sed -i "s;${{ inputs.image_name }}_.*$;${{ inputs.image_name }}:${{ inputs.image_name }}_${{ inputs.image_tag }};g" ${{ inputs.file_path_dev }}
+        git config user.email "${{ inputs.git_commit_user }}"
+        git config user.name "${{ inputs.git_commit_user }}"
+        git commit -am "Image Tag: ${{ inputs.image_tag }} ${{ github.event.head_commit.message }}"
+        git push https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ inputs.gitops_repo_owner }}/${{ inputs.gitops_repo_name }}.git
 
     - name: Update GitOps Repo for Prod
       if: startsWith(github.ref, 'refs/tags/v')
       env:
         GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
       run: |
-        cd ${{ inputs.file_path_prod }}
-        sed -i "s;${{ inputs.image_name }}:social_api_image_.*$;${{ inputs.image_name }}:social_api_image_${{ env.UNIQUE_TAG }};g" values-prod.yaml
-        git config user.email "${{ secrets.git_commit_user }}"
-        git config user.name "gitops"
-        git commit -am "Image Tag: ${{ env.UNIQUE_TAG }} ${{ github.event.head_commit.message }}"
-        git push https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ inputs.repo_name }}.git
+        cd gitops-repo
+        sed -i "s;${{ inputs.image_name }}:social_api_image_.*$;${{ inputs.image_name }}:social_api_image_${{ inputs.image_tag }};g" ${{ inputs.file_path_prod }}
+        git config user.email "${{ inputs.git_commit_user }}"
+        git config user.name "${{ inputs.git_commit_user }}"
+        git commit -am "Image Tag: ${{ inputs.image_tag }} ${{ github.event.head_commit.message }}"
+        git push https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ inputs.gitops_repo_owner }}/${{ inputs.gitops_repo_name }}.git
