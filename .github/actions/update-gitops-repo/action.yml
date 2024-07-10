@@ -65,7 +65,7 @@ runs:
         sed -i "s;:${{ inputs.image_name }}_.*$;:${{ inputs.image_name }}_${{ inputs.image_tag }};g" ${{ inputs.file_path_dev }}
         git config user.email "${{ inputs.git_commit_user }}"
         git config user.name "${{ inputs.git_commit_user }}"
-        git commit -am "Image Tag: ${{ inputs.image_tag }} ${{ github.event.head_commit.message }}"
+        git commit -am "Image Tag: ${{ inputs.image_tag }} from ${{ github.repository }}: ${{ github.event.head_commit.message }}"
         git push https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ inputs.gitops_repo_owner }}/${{ inputs.gitops_repo_name }}.git
 
     - name: Update GitOps Repo for Prod
@@ -78,6 +78,6 @@ runs:
         sed -i "s;:${{ inputs.image_name }}_.*$;:${{ inputs.image_name }}_${{ inputs.image_tag }};g" ${{ inputs.file_path_prod }}
         git config user.email "${{ inputs.git_commit_user }}"
         git config user.name "${{ inputs.git_commit_user }}"
-        git commit -am "Image Tag: ${{ inputs.image_tag }} ${{ github.event.head_commit.message }}"
+        git commit -am "Image Tag: ${{ inputs.image_tag }} from ${{ github.repository }}: ${{ github.event.head_commit.message }}"
         git push https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/${{ inputs.gitops_repo_owner }}/${{ inputs.gitops_repo_name }}.git
 
